@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from math import asin, degrees, dist
-from typing import Protocol, Sequence
+from typing import Protocol
 
 
 class Point3D(Protocol):
@@ -81,9 +82,7 @@ def _coordinates(point: Point3D) -> tuple[float, float, float]:
     return point.x, point.y, point.z
 
 
-def is_fist(
-    landmarks: Sequence[Point3D], palm_size: float, threshold: float
-) -> bool:
+def is_fist(landmarks: Sequence[Point3D], palm_size: float, threshold: float) -> bool:
     if palm_size <= EPSILON:
         return False
 
@@ -141,9 +140,7 @@ def landmarks_to_servo_angles(
         config.y_min,
     )
 
-    bounded_palm_size = clamp(
-        palm_size, config.palm_size_min, config.palm_size_max
-    )
+    bounded_palm_size = clamp(palm_size, config.palm_size_min, config.palm_size_max)
     z_angle = map_range(
         bounded_palm_size,
         config.palm_size_min,

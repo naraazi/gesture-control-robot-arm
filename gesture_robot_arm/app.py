@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import argparse
 import logging
+from collections.abc import Sequence
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from .control import ControlConfig, ServoAngles, landmarks_to_servo_angles
 
