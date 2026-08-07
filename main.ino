@@ -1,40 +1,48 @@
 #include <Servo.h>
 
-Servo servo[4];
-int default_angle[4] = {130, 90, 129, 110}; // -- pay attention on that - mid points: {x, y, z, c}
+namespace {
+constexpr size_t kServoCount = 4;
+constexpr unsigned long kBaudRate = 9600;
+constexpr unsigned long kCommandTimeoutMs = 1000;
+constexpr uint8_t kServoPins[kServoCount] = {5, 6, 7, 8};
+constexpr uint8_t kDefaultAngles[kServoCount] = {130, 90, 129, 110};
 
-void setup() {
-    Serial.begin(9600);
-    servo[0].attach(5);
-    servo[1].attach(6);
-    servo[2].attach(7);
-    servo[3].attach(8);
+Servo servos[kServoCount];
+uint8_t commandAngles[kServoCount] = {};
+uint8_t currentAngles[kServoCount] = {};
+unsigned long lastCommandAt = 0;
 
-    for (size_t i = 0; i < 4; i++) {
-        servo[i].write(default_angle[i]);
+void applyAngles(const uint8_t angles[]) {
+    for (size_t index = 0; index < kServoCount; ++index) {
+        const uint8_t safeAngle = constrain(angles[index], 0, 180);
+        if (safeAngle != currentAngles[index]) {
+            servos[index].write(safeAngle);
+            currentAngles[index] = safeAngle;
+        }
     }
 }
+}  // namespace
 
-byte angle[4];
-byte pre_angle[4];
-long t = millis();
+void setup() {
+    Serial.begin(kBaudRate);
+    Serial.setTimeout(20);
+    for (size_t index = 0; index < kServoCount; ++index) {
+        servos[index].attach(kServoPins[index]);
+    }
+    applyAngles(kDefaultAngles);
+    lastCommandAt = millis();
+}
 
 void loop() {
-    if (Serial.available()) {
-        Serial.readBytes(angle, 4);
-        for (size_t i = 0; i < 4; i++) {
-            if (angle[i] != pre_angle[i]) {
-                servo[i].write(angle[i]);
-                pre_angle[i] = angle[i];
-            }
+    if (Serial.available() >= static_cast<int>(kServoCount)) {
+        const size_t bytesRead = Serial.readBytes(commandAngles, kServoCount);
+        if (bytesRead == kServoCount) {
+            applyAngles(commandAngles);
+            lastCommandAt = millis();
         }
-        t = millis();
     }
 
-    if (millis() - t > 1000) {
-        for (size_t i = 0; i < 4; i++) {
-            servo[i].write(default_angle[i]);
-            pre_angle[i] = default_angle[i];
-        }
+    if (millis() - lastCommandAt > kCommandTimeoutMs) {
+        applyAngles(kDefaultAngles);
     }
 }
